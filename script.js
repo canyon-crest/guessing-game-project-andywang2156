@@ -4,6 +4,10 @@ setInterval(function() {
     date.textContent = time();
 }, 1000);
 
+let correctSound = new Audio("correct.mp3");
+let wrongSound = new Audio("incorrect.mp3");
+let retrySound = new Audio("retry.mp3");
+
 
 // global vairables and constants
 let score, answer, level, gameStart, sums, count, fast;
@@ -67,7 +71,6 @@ function play(){
 
     answer = Math.floor(Math.random()*level) + 1;
     msg.textContent = nameStuff() + ", Guess a number between 1-" + level;
-    guess.placeholder = answer;
     score = 0;
     start = new Date().getTime();
     gameStart = start;
@@ -78,27 +81,39 @@ function makeGuess(){
     let userGuess = parseInt(guess.value);
     if (isNaN(userGuess)|| userGuess < 1 || userGuess > level) {
         msg.textContent = nameStuff() + ", INVALID, guess a number/number in the range!";
+        wrongSound.play();
         return;
     }
     score++
+    let diff = Math.abs(userGuess - answer);
+    if (diff === 0) {
+        // already handled in the correct guess block
+    } else if (diff <= Math.ceil(Math.sqrt(level) / 2)) {
+        msg.textContent = "Hot";
+    } else if (diff <= Math.floor(Math.sqrt(level))) {
+        msg.textContent = "Warm";
+    } else {
+        msg.textContent = "Cold";
+    }
 
+    
     if(userGuess > answer) {
-        msg.textContent = "Too high";
+        msg.textContent += " | Too high";
+        retrySound.play();
     } 
     else if (userGuess < answer) {
-        msg.textContent = "Too low";
-        if(userGuess >= (answer - Math.ceil(Math.sqrt(level))/2)){
-            msg.textContent += " but Hot";
-        }
-        else if(userGuess >= (answer - Math.floor(Math.sqrt(level)))){
-            msg.textContent += " but Warm";
-        }
-        else {
-            msg.textContent += " and Cold";
-        }
+        msg.textContent += " | Too low";
+        retrySound.play();
     } 
     else {
         msg.textContent = nameStuff() + ", you got it! It took you " + score + " guess(es).";
+        correctSound.play();
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+
         if (score <= Math.log2(level)){
             goodness.textContent = "Your score is good";
         } else if (score <= 2*Math.log2(level)){
@@ -132,7 +147,6 @@ function Timer() {
 function reset(){
     guessBtn.disabled = true;
     guess.value = "";
-    guess.placeholder = "";
     playBtn.disabled = false;
     guess.disabled = true; 
     for (let i = 0; i < levelArr.length; i++){
